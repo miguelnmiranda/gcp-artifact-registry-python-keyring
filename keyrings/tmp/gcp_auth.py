@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 from google.auth import default
 from google.auth.transport import requests
-from google.auth.exceptions import DefaultCredentialsError
+from google.auth.exceptions import DefaultCredentialsError, RefreshError
 
 import json
 import logging
@@ -24,14 +24,13 @@ class GCPPythonAuth(backend.KeyringBackend):
       creds, _ = default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
       creds.refresh(requests.Request())
       return creds.token
-    except Exception as exception:
-      logging.warning("Failed to retrieve Application Default Credentials.", exc_info=exception)
+    except (DefaultCredentialsError, RefreshError) as exception:
+      logging.warning(f"Failed to retrieve Application Default Credentials: {exception}")
 
     try:
-      credentials = self.get_gcloud_credential()
-      return credentials
-    except Exception as exception:
-      logging.warning("Failed to retrieve credentials from gcloud.", exc_info=exception)
+      return self.get_gcloud_credential()
+    except DefaultCredentialsError as exception:
+      logging.warning(f"Failed to retrieve credentials from gcloud: {exception}")
 
     logging.warning("GCP Artifact Registry PyPI Keyring: No credentials could be found.")
     raise Exception("Failed to find credentials, Please run: `gcloud auth application-default login or export GOOGLE_APPLICATION_CREDENTIALS=<path/to/service/account/key>`")
@@ -54,7 +53,7 @@ class GCPPythonAuth(backend.KeyringBackend):
       logging.warning("Trying to retrieve credentials from gcloud...")
       command = subprocess.run(['gcloud', 'config', 'config-helper', '--format=json(credential)'], check=True, stdout=subprocess.PIPE, universal_newlines=True)
     except Exception as exception:
-      raise DefaultCredentialsError("gcloud command exited with status: {}".format(exception))
+      raise DefaultCredentialsError(f"gcloud command exited with status: {exception}") from exception
 
     credential = json.loads(command.stdout).get("credential")
 
