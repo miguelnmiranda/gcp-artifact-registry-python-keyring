@@ -2,10 +2,6 @@ from keyring import backend
 from keyring import credentials
 from urllib.parse import urlparse
 
-from google.auth import default
-from google.auth.transport import requests
-from google.auth.exceptions import DefaultCredentialsError, RefreshError
-
 import json
 import logging
 import subprocess
@@ -14,14 +10,15 @@ class GCPPythonAuth(backend.KeyringBackend):
   priority = 8
 
   def get_password(self, service, username):
-
-    logging.error(f"HERE!!!")
-
     url = urlparse(service)
     hostname = service if url.hostname is None else url.hostname
 
     if hostname is None or not hostname.endswith(".pkg.dev"):
       return
+
+    from google.auth import default
+    from google.auth.transport import requests
+    from google.auth.exceptions import DefaultCredentialsError, RefreshError
 
     try:
       creds, _ = default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
