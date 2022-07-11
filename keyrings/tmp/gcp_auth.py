@@ -11,9 +11,12 @@ import logging
 import subprocess
 
 class GCPPythonAuth(backend.KeyringBackend):
-  priority = 9
+  priority = 8
 
   def get_password(self, service, username):
+
+    logging.error(f"HERE!!!")
+
     url = urlparse(service)
     hostname = service if url.hostname is None else url.hostname
 
